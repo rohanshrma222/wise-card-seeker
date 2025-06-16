@@ -13,11 +13,11 @@ interface ComparisonViewProps {
 
 export const ComparisonView = ({ cards, onBack, onRestart }: ComparisonViewProps) => {
   const comparisonFeatures = [
-    { key: 'annualFee', label: 'Annual Fee', format: (value: number) => value === 0 ? 'Free' : `₹${value.toLocaleString()}` },
-    { key: 'joiningFee', label: 'Joining Fee', format: (value: number) => value === 0 ? 'Free' : `₹${value.toLocaleString()}` },
-    { key: 'rewardType', label: 'Reward Type', format: (value: string) => value },
-    { key: 'rewardRate', label: 'Reward Rate', format: (value: string) => value },
-    { key: 'minIncome', label: 'Min Income', format: (value: number) => `₹${value.toLocaleString()}/month` },
+    { key: 'annualFee' as keyof CreditCardType, label: 'Annual Fee', format: (value: number) => value === 0 ? 'Free' : `₹${value.toLocaleString()}` },
+    { key: 'joiningFee' as keyof CreditCardType, label: 'Joining Fee', format: (value: number) => value === 0 ? 'Free' : `₹${value.toLocaleString()}` },
+    { key: 'rewardType' as keyof CreditCardType, label: 'Reward Type', format: (value: string) => value },
+    { key: 'rewardRate' as keyof CreditCardType, label: 'Reward Rate', format: (value: string) => value },
+    { key: 'minIncome' as keyof CreditCardType, label: 'Min Income', format: (value: number) => `₹${value.toLocaleString()}/month` },
   ];
 
   return (
@@ -61,7 +61,7 @@ export const ComparisonView = ({ cards, onBack, onRestart }: ComparisonViewProps
                   </div>
                   {cards.map((card) => (
                     <div key={`${card.id}-${feature.key}`} className="p-4 bg-white border border-gray-200">
-                      {feature.format((card as any)[feature.key])}
+                      {feature.format(card[feature.key] as any)}
                     </div>
                   ))}
                 </>
