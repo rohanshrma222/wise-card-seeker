@@ -9,7 +9,117 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      credit_cards: {
+        Row: {
+          annual_fee: number | null
+          apply_link: string | null
+          category: string | null
+          created_at: string
+          eligibility: string[] | null
+          id: string
+          image: string | null
+          is_active: boolean | null
+          issuer: string
+          joining_fee: number | null
+          min_income: number | null
+          name: string
+          reward_rate: string | null
+          reward_type: string | null
+          special_perks: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          annual_fee?: number | null
+          apply_link?: string | null
+          category?: string | null
+          created_at?: string
+          eligibility?: string[] | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          issuer: string
+          joining_fee?: number | null
+          min_income?: number | null
+          name: string
+          reward_rate?: string | null
+          reward_type?: string | null
+          special_perks?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          annual_fee?: number | null
+          apply_link?: string | null
+          category?: string | null
+          created_at?: string
+          eligibility?: string[] | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          issuer?: string
+          joining_fee?: number | null
+          min_income?: number | null
+          name?: string
+          reward_rate?: string | null
+          reward_type?: string | null
+          special_perks?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          recommendations: Json | null
+          session_data: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recommendations?: Json | null
+          session_data?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recommendations?: Json | null
+          session_data?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

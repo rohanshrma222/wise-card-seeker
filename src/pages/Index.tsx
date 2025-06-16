@@ -1,9 +1,11 @@
 
-import { useState } from 'react';
-import { ChatInterface } from '@/components/ChatInterface';
+import { useState, useEffect } from 'react';
+import { AIChat } from '@/components/ai/AIChat';
 import { RecommendationResults } from '@/components/RecommendationResults';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { ComparisonView } from '@/components/ComparisonView';
+import { AuthPage } from '@/components/auth/AuthPage';
+import { useAuth } from '@/hooks/useAuth';
 
 export type UserProfile = {
   monthlyIncome?: number;
@@ -36,10 +38,28 @@ export type CreditCard = {
 };
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<'welcome' | 'chat' | 'results' | 'comparison'>('welcome');
   const [userProfile, setUserProfile] = useState<UserProfile>({});
   const [recommendations, setRecommendations] = useState<CreditCard[]>([]);
   const [selectedCards, setSelectedCards] = useState<CreditCard[]>([]);
+
+  // Show loading while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth page if user is not logged in
+  if (!user) {
+    return <AuthPage />;
+  }
 
   const handleStartJourney = () => {
     setCurrentView('chat');
@@ -70,7 +90,7 @@ const Index = () => {
       )}
       
       {currentView === 'chat' && (
-        <ChatInterface 
+        <AIChat 
           onComplete={handleChatComplete}
           userProfile={userProfile}
         />

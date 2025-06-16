@@ -2,9 +2,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Star, ArrowRight, RotateCcw, GitCompare } from 'lucide-react';
+import { CreditCard, Star, ArrowRight, RotateCcw, GitCompare, LogOut } from 'lucide-react';
 import { UserProfile, CreditCard as CreditCardType } from '@/pages/Index';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RecommendationResultsProps {
   recommendations: CreditCardType[];
@@ -19,6 +20,7 @@ export const RecommendationResults = ({
   onCompare, 
   onRestart 
 }: RecommendationResultsProps) => {
+  const { signOut } = useAuth();
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
 
   const toggleCardSelection = (cardId: string) => {
@@ -38,19 +40,26 @@ export const RecommendationResults = ({
 
   const calculateRewardEstimate = (card: CreditCardType) => {
     const totalSpending = Object.values(userProfile.spendingHabits || {}).reduce((a, b) => a + (b || 0), 0);
-    const monthlyReward = totalSpending * 0.02; // 2% average reward rate
+    const monthlyReward = totalSpending * 0.02;
     return Math.round(monthlyReward * 12);
   };
 
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Your Personalized Credit Card Recommendations
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+            Your AI-Powered Recommendations
           </h1>
+          <Button onClick={signOut} variant="outline" className="flex items-center gap-2">
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </Button>
+        </div>
+
+        <div className="text-center mb-8">
           <p className="text-lg text-gray-600 mb-6">
-            Based on your profile, here are the best credit cards that match your needs
+            Based on advanced AI analysis of your financial profile, here are your personalized credit card recommendations
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 mb-6">
@@ -97,7 +106,7 @@ export const RecommendationResults = ({
                         {index === 0 && (
                           <Badge className="bg-yellow-500 text-white">
                             <Star className="w-3 h-3 mr-1" />
-                            Best Match
+                            AI Top Pick
                           </Badge>
                         )}
                       </CardTitle>
@@ -116,28 +125,32 @@ export const RecommendationResults = ({
               <CardContent className="p-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold mb-3 text-green-700">Why This Card is Perfect for You:</h4>
+                    <h4 className="font-semibold mb-3 text-green-700">AI Analysis - Why This Card:</h4>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2"></div>
-                        <span>Matches your monthly income requirement</span>
+                        <span>Perfectly matches your ₹{userProfile.monthlyIncome?.toLocaleString()} monthly income</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2"></div>
-                        <span>Excellent rewards on your top spending categories</span>
+                        <span>Optimized rewards for your spending categories</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2"></div>
-                        <span>Aligns with your preferred benefits</span>
+                        <span>Aligns with your selected benefit preferences</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2"></div>
+                        <span>Suitable for your credit profile</span>
                       </li>
                     </ul>
 
                     <div className="mt-4 p-3 bg-green-50 rounded-lg">
                       <p className="text-sm font-medium text-green-800">
-                        Estimated Annual Rewards: ₹{calculateRewardEstimate(card).toLocaleString()}
+                        AI Estimated Annual Rewards: ₹{calculateRewardEstimate(card).toLocaleString()}
                       </p>
                       <p className="text-xs text-green-600 mt-1">
-                        Based on your spending pattern
+                        Based on AI analysis of your spending pattern
                       </p>
                     </div>
                   </div>
@@ -183,7 +196,7 @@ export const RecommendationResults = ({
 
         <div className="text-center mt-12">
           <p className="text-sm text-gray-500 mb-4">
-            Click on cards to select them for comparison • All recommendations are personalized for your profile
+            Click on cards to select them for comparison • All recommendations are AI-powered and personalized
           </p>
         </div>
       </div>

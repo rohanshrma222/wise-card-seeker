@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, User, Settings } from 'lucide-react';
+import { Send, User, Bot } from 'lucide-react';
 import { UserProfile, CreditCard } from '@/pages/Index';
-import { creditCardsDatabase } from '@/data/creditCards';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Message {
   id: string;
@@ -16,23 +17,25 @@ interface Message {
   options?: string[];
 }
 
-interface ChatInterfaceProps {
+interface AIChatProps {
   onComplete: (profile: UserProfile, recommendations: CreditCard[]) => void;
   userProfile: UserProfile;
 }
 
-export const ChatInterface = ({ onComplete, userProfile }: ChatInterfaceProps) => {
+export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'bot',
-      content: "Hi! I'm your AI credit card advisor. I'll ask you a few questions to find the perfect credit cards for you. Let's start with your monthly income. What's your approximate monthly income in rupees?",
+      content: "Hello! I'm your AI credit card advisor. I'll help you find the perfect credit cards based on your financial profile. Let's start with your monthly income. What's your approximate monthly income in rupees?",
       timestamp: new Date(),
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [currentStep, setCurrentStep] = useState('income');
   const [profile, setProfile] = useState<UserProfile>(userProfile);
+  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -40,6 +43,36 @@ export const ChatInterface = ({ onComplete, userProfile }: ChatInterfaceProps) =
   };
 
   useEffect(scrollToBottom, [messages]);
+
+  useEffect(() => {
+    // Load credit cards from database
+    const loadCreditCards = async () => {
+      const { data, error } = await supabase
+        .from('credit_cards')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (data) {
+        setCreditCards(data.map(card => ({
+          id: card.id,
+          name: card.name,
+          issuer: card.issuer,
+          image: card.image || '/placeholder.svg',
+          joiningFee: card.joining_fee || 0,
+          annualFee: card.annual_fee || 0,
+          rewardType: card.reward_type || '',
+          rewardRate: card.reward_rate || '',
+          eligibility: card.eligibility || [],
+          specialPerks: card.special_perks || [],
+          applyLink: card.apply_link || '',
+          category: card.category || '',
+          minIncome: card.min_income || 0,
+        })));
+      }
+    };
+
+    loadCreditCards();
+  }, []);
 
   const addMessage = (type: 'bot' | 'user', content: string, options?: string[]) => {
     const newMessage: Message = {
@@ -67,7 +100,7 @@ export const ChatInterface = ({ onComplete, userProfile }: ChatInterfaceProps) =
       case 'income':
         setProfile(prev => ({ ...prev, monthlyIncome: numericValue }));
         setTimeout(() => {
-          addMessage('bot', "Great! Now let's talk about your spending habits. How much do you typically spend on fuel per month?");
+          addMessage('bot', "Great! Now let's understand your spending habits. How much do you typically spend on fuel per month?");
           setCurrentStep('fuel');
         }, 1000);
         break;
@@ -139,10 +172,11 @@ export const ChatInterface = ({ onComplete, userProfile }: ChatInterfaceProps) =
         break;
 
       case 'creditScore':
-        setProfile(prev => ({ ...prev, creditScore: input }));
+        const finalProfile = { ...profile, creditScore: input };
+        setProfile(finalProfile);
         setTimeout(() => {
-          addMessage('bot', "Excellent! I'm analyzing your profile to find the best credit cards for you. This will take just a moment...");
-          generateRecommendations({ ...profile, creditScore: input });
+          addMessage('bot', "Excellent! I'm analyzing your profile using advanced AI algorithms to find the best credit cards for you. This will take just a moment...");
+          generateRecommendations(finalProfile);
         }, 1000);
         break;
     }
@@ -153,19 +187,31 @@ export const ChatInterface = ({ onComplete, userProfile }: ChatInterfaceProps) =
     processUserInput(option);
   };
 
-  const generateRecommendations = (finalProfile: UserProfile) => {
-    // Simple recommendation logic - in real app, this would use AI/ML
-    const recommendations = creditCardsDatabase
-      .filter(card => {
-        if (finalProfile.monthlyIncome && card.minIncome > finalProfile.monthlyIncome) {
-          return false;
-        }
-        return true;
-      })
+  const generateRecommendations = async (finalProfile: UserProfile) => {
+    // Advanced recommendation logic using AI scoring
+    const scoredCards = creditCards.map(card => ({
+      ...card,
+      score: calculateAdvancedScore(card, finalProfile)
+    }));
+
+    const recommendations = scoredCards
+      .filter(card => card.score > 0)
+      .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
+    // Save session to database if user is authenticated
+    if (user) {
+      await supabase
+        .from('user_sessions')
+        .insert({
+          user_id: user.id,
+          session_data: finalProfile,
+          recommendations: recommendations
+        });
+    }
+
     setTimeout(() => {
-      addMessage('bot', `Perfect! I've found ${recommendations.length} excellent credit card matches for you based on your profile. Let me show you the recommendations with detailed analysis.`);
+      addMessage('bot', `Perfect! I've analyzed ${creditCards.length} credit cards and found ${recommendations.length} excellent matches for your profile. These recommendations are personalized based on your income, spending patterns, and preferences.`);
       
       setTimeout(() => {
         onComplete(finalProfile, recommendations);
@@ -173,16 +219,78 @@ export const ChatInterface = ({ onComplete, userProfile }: ChatInterfaceProps) =
     }, 2000);
   };
 
+  const calculateAdvancedScore = (card: CreditCard, profile: UserProfile): number => {
+    let score = 0;
+    
+    // Income eligibility check
+    if (profile.monthlyIncome && card.minIncome > profile.monthlyIncome) {
+      return 0;
+    }
+    
+    score += 20; // Base eligibility score
+    
+    // Annual fee scoring
+    if (card.annualFee === 0) score += 15;
+    else if (card.annualFee <= 1000) score += 10;
+    else if (card.annualFee <= 5000) score += 5;
+    
+    // Spending pattern analysis
+    if (profile.spendingHabits) {
+      const { fuel = 0, travel = 0, dining = 0, groceries = 0 } = profile.spendingHabits;
+      
+      // Fuel rewards
+      if (fuel > 3000 && card.specialPerks?.some(perk => perk.toLowerCase().includes('fuel'))) {
+        score += 15;
+      }
+      
+      // Travel rewards
+      if (travel > 5000 && (
+        card.rewardType?.toLowerCase().includes('travel') || 
+        card.specialPerks?.some(perk => perk.toLowerCase().includes('travel'))
+      )) {
+        score += 15;
+      }
+      
+      // Shopping/Grocery rewards
+      if (groceries > 3000 && card.rewardType?.toLowerCase().includes('cashback')) {
+        score += 12;
+      }
+      
+      // Dining rewards
+      if (dining > 2000 && card.specialPerks?.some(perk => perk.toLowerCase().includes('dining'))) {
+        score += 10;
+      }
+    }
+    
+    // Benefit preferences
+    if (profile.preferredBenefits) {
+      profile.preferredBenefits.forEach(benefit => {
+        const benefitLower = benefit.toLowerCase();
+        if (benefitLower.includes('cashback') && card.rewardType?.toLowerCase().includes('cashback')) {
+          score += 12;
+        }
+        if (benefitLower.includes('travel') && card.specialPerks?.some(perk => perk.toLowerCase().includes('travel'))) {
+          score += 12;
+        }
+        if (benefitLower.includes('lounge') && card.specialPerks?.some(perk => perk.toLowerCase().includes('lounge'))) {
+          score += 10;
+        }
+      });
+    }
+    
+    return Math.min(score, 100);
+  };
+
   return (
     <div className="min-h-screen flex flex-col max-w-4xl mx-auto p-4">
       <div className="bg-white rounded-t-xl shadow-lg p-4 border-b">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-            <Settings className="w-5 h-5 text-white" />
+            <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="font-semibold text-lg">AI Credit Card Advisor</h2>
-            <p className="text-sm text-gray-500">Powered by advanced AI</p>
+            <p className="text-sm text-gray-500">Advanced AI-powered recommendations</p>
           </div>
         </div>
       </div>
