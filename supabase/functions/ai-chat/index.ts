@@ -46,6 +46,9 @@ serve(async (req) => {
   try {
     const { message, conversationHistory = [] } = await req.json();
 
+    console.log('Received message:', message);
+    console.log('OpenAI API Key present:', !!openAIApiKey);
+
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
       ...conversationHistory,
@@ -66,8 +69,16 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API Error:', errorData);
+      throw new Error(`OpenAI API Error: ${response.status} ${errorData}`);
+    }
+
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
+
+    console.log('AI Response:', aiResponse);
 
     // Try to parse as JSON, fallback to simple response
     let parsedResponse;

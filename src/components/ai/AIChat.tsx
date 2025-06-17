@@ -29,7 +29,7 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
     {
       id: '1',
       type: 'bot',
-      content: "Hello! I'm your AI credit card advisor. I'll help you find the perfect credit cards based on your financial profile. Let's start with your monthly income. What's your approximate monthly income in rupees?",
+      content: "Hello! I'm your AI-powered credit card advisor. I'll help you find the perfect credit cards based on your financial profile. Let's start with your monthly income. What's your approximate monthly income in rupees?",
       timestamp: new Date(),
     }
   ]);
@@ -60,6 +60,8 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
   const callAIAssistant = async (userMessage: string) => {
     setLoading(true);
     try {
+      console.log('Calling AI assistant with message:', userMessage);
+      
       const response = await supabase.functions.invoke('ai-chat', {
         body: {
           message: userMessage,
@@ -67,7 +69,12 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
         }
       });
 
-      if (response.error) throw response.error;
+      console.log('AI Response:', response);
+
+      if (response.error) {
+        console.error('Supabase function error:', response.error);
+        throw response.error;
+      }
 
       const aiResponse = response.data;
       
@@ -82,10 +89,12 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
       addMessage('bot', aiResponse.message, aiResponse.options);
       
       // Update current step
-      setCurrentStep(aiResponse.nextStep);
+      if (aiResponse.nextStep) {
+        setCurrentStep(aiResponse.nextStep);
+      }
 
       // Handle profile completion
-      if (aiResponse.nextStep === 'complete') {
+      if (aiResponse.nextStep === 'complete' || aiResponse.nextStep === 'analysis') {
         setTimeout(() => {
           const recommendations = generateRecommendations(profile);
           
@@ -106,7 +115,7 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
 
     } catch (error) {
       console.error('AI Chat Error:', error);
-      addMessage('bot', "I'm sorry, I'm having trouble right now. Could you please try again?");
+      addMessage('bot', "I'm sorry, I'm having trouble connecting to my AI brain right now. Could you please try again? Let's continue with your financial profile.");
     }
     setLoading(false);
   };
@@ -120,15 +129,18 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
   };
 
   const processUserInput = async (input: string) => {
-    // Update profile based on current step
+    // Update profile based on current step and input
     const numericValue = parseFloat(input.replace(/[^\d.]/g, ''));
 
     switch (currentStep) {
       case 'income':
-        setProfile(prev => ({ ...prev, monthlyIncome: numericValue }));
+        if (numericValue > 0) {
+          setProfile(prev => ({ ...prev, monthlyIncome: numericValue }));
+        }
         break;
       case 'spending':
-        // Handle spending patterns - this would need more sophisticated parsing
+        // For spending, we could parse multiple categories
+        // For now, let's handle it in the AI response
         break;
       case 'benefits':
         const benefits = input.includes(',') ? input.split(',').map(b => b.trim()) : [input];
@@ -157,7 +169,7 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
           </div>
           <div>
             <h2 className="font-semibold text-lg">AI Credit Card Advisor</h2>
-            <p className="text-sm text-gray-500">Powered by OpenAI GPT</p>
+            <p className="text-sm text-gray-500">Powered by OpenAI GPT-4o-mini</p>
           </div>
         </div>
       </div>
