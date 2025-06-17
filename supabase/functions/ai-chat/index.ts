@@ -49,6 +49,10 @@ serve(async (req) => {
     console.log('Received message:', message);
     console.log('OpenAI API Key present:', !!openAIApiKey);
 
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
       ...conversationHistory,
@@ -62,7 +66,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: messages,
         temperature: 0.7,
         max_tokens: 300,
