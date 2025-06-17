@@ -1,121 +1,120 @@
 
-import { useState } from 'react';
-import { CreditCard, UserProfile } from '@/pages/Index';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { UserProfile, CreditCard } from '@/pages/Index';
 
-interface RecommendationEngine {
-  scoreCard: (card: CreditCard, profile: UserProfile) => number;
-  getRecommendations: (cards: CreditCard[], profile: UserProfile) => CreditCard[];
-}
+export const useRecommendations = () => {
+  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export const useRecommendations = (): RecommendationEngine => {
-  const scoreCard = (card: CreditCard, profile: UserProfile): number => {
+  useEffect(() => {
+    loadCreditCards();
+  }, []);
+
+  const loadCreditCards = async () => {
+    const { data, error } = await supabase
+      .from('credit_cards')
+      .select('*')
+      .eq('is_active', true);
+    
+    if (data && !error) {
+      const formattedCards = data.map(card => ({
+        id: card.id,
+        name: card.name,
+        issuer: card.issuer,
+        image: card.image || '/placeholder.svg',
+        joiningFee: card.joining_fee || 0,
+        annualFee: card.annual_fee || 0,
+        rewardType: card.reward_type || '',
+        rewardRate: card.reward_rate || '',
+        eligibility: card.eligibility || [],
+        specialPerks: card.special_perks || [],
+        applyLink: card.apply_link || '',
+        category: card.category || '',
+        minIncome: card.min_income || 0,
+      }));
+      setCreditCards(formattedCards);
+    }
+    setLoading(false);
+  };
+
+  const calculateAdvancedScore = (card: CreditCard, profile: UserProfile): number => {
     let score = 0;
     
-    // Income eligibility (critical factor)
-    if (profile.monthlyIncome && card.min_income > profile.monthlyIncome) {
-      return 0; // Ineligible
+    // Income eligibility check
+    if (profile.monthlyIncome && card.minIncome > profile.monthlyIncome) {
+      return 0;
     }
     
-    // Base score for eligibility
-    score += 20;
+    score += 20; // Base eligibility score
     
-    // Annual fee preference (lower is better for most users)
-    if (card.annual_fee === 0) {
-      score += 15;
-    } else if (card.annual_fee <= 1000) {
-      score += 10;
-    } else if (card.annual_fee <= 5000) {
-      score += 5;
-    }
+    // Annual fee scoring
+    if (card.annualFee === 0) score += 15;
+    else if (card.annualFee <= 1000) score += 10;
+    else if (card.annualFee <= 5000) score += 5;
     
-    // Spending pattern matching
-    const totalSpending = Object.values(profile.spendingHabits || {}).reduce((a, b) => a + (b || 0), 0);
-    
+    // Spending pattern analysis
     if (profile.spendingHabits) {
-      // Fuel spending
-      if (profile.spendingHabits.fuel && profile.spendingHabits.fuel > 3000) {
-        if (card.reward_type?.toLowerCase().includes('fuel') || 
-            card.special_perks?.some(perk => perk.toLowerCase().includes('fuel'))) {
-          score += 15;
-        }
+      const { fuel = 0, travel = 0, dining = 0, groceries = 0 } = profile.spendingHabits;
+      
+      // Fuel rewards
+      if (fuel > 3000 && card.specialPerks?.some(perk => perk.toLowerCase().includes('fuel'))) {
+        score += 15;
       }
       
-      // Travel spending
-      if (profile.spendingHabits.travel && profile.spendingHabits.travel > 5000) {
-        if (card.reward_type?.toLowerCase().includes('travel') || 
-            card.special_perks?.some(perk => perk.toLowerCase().includes('travel') || perk.toLowerCase().includes('lounge'))) {
-          score += 15;
-        }
+      // Travel rewards
+      if (travel > 5000 && (
+        card.rewardType?.toLowerCase().includes('travel') || 
+        card.specialPerks?.some(perk => perk.toLowerCase().includes('travel'))
+      )) {
+        score += 15;
       }
       
-      // Dining spending
-      if (profile.spendingHabits.dining && profile.spendingHabits.dining > 2000) {
-        if (card.special_perks?.some(perk => perk.toLowerCase().includes('dining'))) {
-          score += 10;
-        }
+      // Shopping/Grocery rewards
+      if (groceries > 3000 && card.rewardType?.toLowerCase().includes('cashback')) {
+        score += 12;
       }
       
-      // Shopping spending
-      if (profile.spendingHabits.groceries && profile.spendingHabits.groceries > 3000) {
-        if (card.reward_type?.toLowerCase().includes('cashback') || 
-            card.special_perks?.some(perk => perk.toLowerCase().includes('shopping'))) {
-          score += 10;
-        }
+      // Dining rewards
+      if (dining > 2000 && card.specialPerks?.some(perk => perk.toLowerCase().includes('dining'))) {
+        score += 10;
       }
     }
     
-    // Preferred benefits matching
+    // Benefit preferences
     if (profile.preferredBenefits) {
       profile.preferredBenefits.forEach(benefit => {
         const benefitLower = benefit.toLowerCase();
-        
-        if (benefitLower.includes('cashback') && card.reward_type?.toLowerCase().includes('cashback')) {
+        if (benefitLower.includes('cashback') && card.rewardType?.toLowerCase().includes('cashback')) {
           score += 12;
         }
-        if (benefitLower.includes('travel') && 
-            (card.reward_type?.toLowerCase().includes('travel') || 
-             card.special_perks?.some(perk => perk.toLowerCase().includes('travel')))) {
+        if (benefitLower.includes('travel') && card.specialPerks?.some(perk => perk.toLowerCase().includes('travel'))) {
           score += 12;
         }
-        if (benefitLower.includes('lounge') && 
-            card.special_perks?.some(perk => perk.toLowerCase().includes('lounge'))) {
-          score += 10;
-        }
-        if (benefitLower.includes('fuel') && 
-            card.special_perks?.some(perk => perk.toLowerCase().includes('fuel'))) {
+        if (benefitLower.includes('lounge') && card.specialPerks?.some(perk => perk.toLowerCase().includes('lounge'))) {
           score += 10;
         }
       });
     }
     
-    // Credit score consideration
-    if (profile.creditScore) {
-      if (profile.creditScore.includes('Excellent') && card.category === 'Premium') {
-        score += 8;
-      } else if (profile.creditScore.includes('Good') && ['Premium', 'Lifestyle'].includes(card.category || '')) {
-        score += 5;
-      } else if (profile.creditScore.includes('Fair') && ['Entry Level', 'Lifestyle'].includes(card.category || '')) {
-        score += 5;
-      }
-    }
-    
-    return Math.min(score, 100); // Cap at 100
+    return Math.min(score, 100);
   };
 
-  const getRecommendations = (cards: CreditCard[], profile: UserProfile): CreditCard[] => {
-    // Score all cards
-    const scoredCards = cards.map(card => ({
+  const generateRecommendations = (profile: UserProfile) => {
+    const scoredCards = creditCards.map(card => ({
       ...card,
-      score: scoreCard(card, profile)
+      score: calculateAdvancedScore(card, profile)
     }));
-    
-    // Filter out ineligible cards and sort by score
+
     return scoredCards
       .filter(card => card.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5); // Return top 5 recommendations
+      .slice(0, 5);
   };
 
-  return { scoreCard, getRecommendations };
+  return {
+    creditCards,
+    loading,
+    generateRecommendations
+  };
 };
