@@ -55,18 +55,17 @@ export const AuthPage = () => {
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tr from-purple-700/20 to-transparent rounded-full blur-3xl"></div>
 
       <Card className="relative z-10 w-full max-w-md bg-gradient-to-br from-gray-800/80 to-gray-900/70 border border-gray-600/40 backdrop-blur-md shadow-2xl">
-        <CardHeader className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 mb-4 mx-auto shadow-lg">
-            <CreditCard className="w-8 h-8 text-white" />
-          </div>
-          <CardTitle className="text-2xl text-white">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </CardTitle>
-          <p className="text-gray-400">
-            {isLogin ? 'Sign in to your account' : 'Start your credit card journey'}
-          </p>
-        </CardHeader>
-
+      <CardHeader className="text-center">
+        <div className="w-16 h-10 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-800 rounded-lg flex items-center justify-center shadow-lg border border-gray-500/30 mx-auto mb-4">
+          <CreditCard className="w-6 h-6 text-white" />
+        </div>
+        <CardTitle className="text-2xl text-white">
+          {isLogin ? 'Welcome Back' : 'Create Account'}
+        </CardTitle>
+        <p className="text-gray-400">
+          {isLogin ? 'Sign in to your account' : 'Start your credit card journey'}
+        </p>
+      </CardHeader>
         <CardContent className="space-y-4">
           {error && (
             <Alert className="mb-2 border-red-300 bg-red-950/30 text-red-400 text-sm">
@@ -146,7 +145,7 @@ export const AuthPage = () => {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-500 hover:to-purple-600 text-white shadow-md transition-all duration-300"
+              className="w-full bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 hover:from-gray-600 hover:via-gray-700 hover:to-gray-800 text-white border border-gray-600/30 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
               disabled={loading}
             >
               {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
