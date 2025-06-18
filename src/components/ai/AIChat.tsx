@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +44,18 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
   };
 
   useEffect(scrollToBottom, [messages]);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(()=>{
+    // focusing on input element
+    inputRef.current?.focus();
+  },[])
+  useEffect(() => {
+    if (!loading) {
+      inputRef.current?.focus();
+    }
+  }, [loading]);
 
   const addMessage = (type: 'bot' | 'user', content: string, options?: string[]) => {
     const newMessage: Message = {
@@ -118,14 +129,18 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
       addMessage('bot', "I'm sorry, I'm having trouble connecting to my AI brain right now. Could you please try again? Let's continue with your financial profile.");
     }
     setLoading(false);
+    
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = (e) => {
+    e.preventDefault()
     if (!inputValue.trim() || loading) return;
 
     addMessage('user', inputValue);
     processUserInput(inputValue);
     setInputValue('');
+    inputRef.current?.focus();
+
   };
 
   const processUserInput = async (input: string) => {
@@ -161,74 +176,105 @@ export const AIChat = ({ onComplete, userProfile }: AIChatProps) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col max-w-4xl mx-auto p-4">
-      <div className="bg-white rounded-t-xl shadow-lg p-4 border-b">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-lg">AI Credit Card Advisor</h2>
-            <p className="text-sm text-gray-500">Powered by OpenAI GPT-4o-mini</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 bg-white shadow-lg overflow-hidden">
-        <div className="h-96 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                message.type === 'user' 
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                <p className="text-sm">{message.content}</p>
-                {message.options && (
-                  <div className="mt-3 space-y-2">
-                    {message.options.map((option, index) => (
-                      <Badge 
-                        key={index}
-                        variant="outline" 
-                        className="cursor-pointer hover:bg-blue-50 mr-2 mb-2"
-                        onClick={() => handleOptionClick(option)}
-                      >
-                        {option}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-gradient-to-r from-gray-900/30 to-transparent"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-white/3 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-gray-600/5 to-transparent rounded-full blur-3xl"></div>
+      
+      <div className="flex flex-col max-w-4xl mx-auto relative z-10 h-screen">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-gray-800/90 to-gray-900/70 backdrop-blur-sm rounded-t-xl shadow-2xl p-6 border border-gray-600/60 border-b-gray-600/30">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-900 rounded-full flex items-center justify-center shadow-lg border border-gray-500/30">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-white/10 to-gray-300/20 flex items-center justify-center">
+                <Bot className="w-6 h-6 text-white drop-shadow-lg" />
               </div>
             </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div>
+              <h2 className="font-bold text-xl text-white">AI Credit Card Advisor</h2>
+              <p className="text-sm text-gray-300">Powered by Advanced AI • Secure & Personalized</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages Container */}
+        <div className="flex-1 bg-gradient-to-br from-gray-800/80 to-gray-900/60 backdrop-blur-sm shadow-2xl overflow-hidden border-x border-gray-600/60">
+          <div className="h-full overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-xs lg:max-w-md px-5 py-4 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl ${
+                  message.type === 'user' 
+                    ? 'bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 text-white border border-gray-600/40 backdrop-blur-sm' 
+                    : 'bg-gradient-to-r from-gray-700/90 to-gray-800/80 text-gray-100 border border-gray-600/50 backdrop-blur-sm'
+                }`}>
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  {message.options && (
+                    <div className="mt-4 space-y-2">
+                      {message.options.map((option, index) => (
+                        <Badge 
+                          key={index}
+                          variant="outline" 
+                          className="cursor-pointer bg-gray-700/60 text-gray-200 border-gray-600/60 hover:bg-gray-600/80 hover:text-white hover:border-gray-500/80 mr-2 mb-2 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm"
+                          onClick={() => handleOptionClick(option)}
+                        >
+                          {option}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-gradient-to-r from-gray-700/90 to-gray-800/80 backdrop-blur-sm px-5 py-4 rounded-2xl border border-gray-600/50 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <span className="text-xs text-gray-300 ml-2">AI is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-b-xl shadow-lg p-4">
-        <div className="flex gap-2">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your answer..."
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            className="flex-1"
-            disabled={loading}
-          />
-          <Button onClick={handleSendMessage} size="sm" disabled={loading}>
-            <Send className="w-4 h-4" />
-          </Button>
+        {/* Input Area */}
+        <div className="bg-gradient-to-r from-gray-800/90 to-gray-900/70 backdrop-blur-sm rounded-b-xl shadow-2xl p-6 border border-gray-600/60 border-t-gray-600/30">
+          <form className="flex gap-3" onSubmit={handleSendMessage}>
+            <Input
+              value={inputValue}
+              ref={inputRef}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Type your answer here..."
+              className="flex-1 bg-gray-700/60 border-gray-600/60 text-white placeholder-gray-400 focus:border-gray-500/80 focus:ring-gray-500/30 backdrop-blur-sm transition-all duration-300"
+              disabled={loading}
+            />
+            <Button 
+              size="sm" 
+              disabled={loading}
+              className="bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 hover:from-gray-600 hover:via-gray-700 hover:to-gray-800 text-white border border-gray-600/30 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl px-4"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
+          <div className="flex items-center justify-center mt-3 space-x-4 text-xs text-gray-400">
+            <div className="flex items-center">
+              <div className="w-1.5 h-1.5 bg-gradient-to-r from-gray-300 to-gray-500 rounded-full mr-2"></div>
+              AI-powered analysis
+            </div>
+            <div className="flex items-center">
+              <div className="w-1.5 h-1.5 bg-gradient-to-r from-gray-300 to-gray-500 rounded-full mr-2"></div>
+              Secure conversation
+            </div>
+            <div className="flex items-center">
+              <div className="w-1.5 h-1.5 bg-gradient-to-r from-gray-300 to-gray-500 rounded-full mr-2"></div>
+              Personalized recommendations
+            </div>
+          </div>
         </div>
       </div>
     </div>
