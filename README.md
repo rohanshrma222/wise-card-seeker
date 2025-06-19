@@ -4,6 +4,10 @@
 
 ![Demo of Wise Card Seeker](public/demo-video.gif)
 
+## Documentation
+
+- [AI Agent Flow & Prompt Design](AGENT_FLOW.md)
+
 A web application for comparing and recommending credit cards based on user preferences. Built with React, TypeScript, Vite, shadcn-ui, and Tailwind CSS.
 
 ## Features
