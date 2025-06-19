@@ -2,7 +2,7 @@
 
 ## Demo
 
-![Demo of Wise Card Seeker](public/demo.gif)
+![Demo of Wise Card Seeker](public/demo-video.gif)
 
 A web application for comparing and recommending credit cards based on user preferences. Built with React, TypeScript, Vite, shadcn-ui, and Tailwind CSS.
 
